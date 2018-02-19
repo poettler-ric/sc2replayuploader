@@ -64,6 +64,7 @@ func init() {
 	flag.StringVar(&hash, "hash", "", "hash of the account for the replays")
 }
 
+// getLastReplay retrieves the last uploaded replay.
 func getLastReplay() (replay SC2Replay) {
 	client := &http.Client{}
 
@@ -101,6 +102,10 @@ func getLastReplay() (replay SC2Replay) {
 	return
 }
 
+// getNewerReplayFiles searches for all replays newer than the given one.
+//
+// rootFolder is the folder to search for replays. lastReplay is the last
+// uploaded replay.
 func getNewerReplayFiles(rootFolder string,
 	lastReplay SC2Replay) (files []string) {
 	maxAge := lastReplay.ReplayTime.Add(-ReplayBufferTime)
@@ -117,6 +122,9 @@ func getNewerReplayFiles(rootFolder string,
 	return
 }
 
+// uploadReplay uploads a replayfile.
+//
+// path to the file to upload.
 func uploadReplay(path string) (result UploadResponse) {
 	log.Printf("uploading %v", filepath.Base(path))
 
