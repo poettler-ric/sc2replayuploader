@@ -1,3 +1,9 @@
+# Installation
+
+```
+$ go install github.com/poettler-ric/sc2replayuploader
+```
+
 # Usage
 
 ```
@@ -22,6 +28,7 @@ Usage of sc2replayuploader:
 # Example
 
 ```
+$ go install github.com/poettler-ric/sc2replayuploader
 $ sc2replayuploader -dumpflags >~/.sc2replayuploader.conf
 $ vi ~/.sc2replayuploader.conf
 $ sc2replayuploader
