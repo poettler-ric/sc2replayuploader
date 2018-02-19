@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/vharitonsky/iniflags"
 	"io"
@@ -14,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -40,6 +40,16 @@ type SC2Replay struct {
 	ReplayTime time.Time
 	// ReplayTimeString is the time the replay happened as string
 	ReplayTimeString string `json:"replay_date"`
+}
+
+// UploadResponse holds information on uploads
+type UploadResponse struct {
+	// StatusCode stores the http status code of the response
+	StatusCode int
+	// QueueIDString is the id of the job handling the upload
+	QueueIDString string `json:"replay_queue_id"`
+	// QueueID is the id of the job handling the upload parsed to int
+	QueueID int
 }
 
 var (
@@ -70,7 +80,6 @@ func getLastReplay() (replay SC2Replay) {
 	}
 	defer resp.Body.Close()
 
-	// TODO: clean logging
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -108,7 +117,7 @@ func getNewerReplayFiles(rootFolder string,
 	return
 }
 
-func uploadReplay(path string) {
+func uploadReplay(path string) (result UploadResponse) {
 	log.Printf("uploading %v", filepath.Base(path))
 
 	b := &bytes.Buffer{}
@@ -150,21 +159,28 @@ func uploadReplay(path string) {
 	}
 	defer resp.Body.Close()
 
-	// TODO: clean logging
-	log.Println(resp.Status)
-	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("error while reading body: %v", err)
-		}
-		fmt.Println(string(bodyBytes))
-	} else {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("error while reading body: %v", err)
-		}
-		fmt.Println(string(bodyBytes))
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("error while reading body: %v", err)
 	}
+	err = json.Unmarshal(bodyBytes, &result)
+	if err != nil {
+		log.Fatalf("error while reading json: %v", err)
+	}
+	result.StatusCode = resp.StatusCode
+
+	if resp.StatusCode == http.StatusOK {
+		result.QueueID, err = strconv.Atoi(result.QueueIDString)
+		if err != nil {
+			log.Fatalf("error while parsing queuid (%v): %v",
+				result.QueueIDString, err)
+		}
+		log.Printf("queued uploaded file with id %v", result.QueueID)
+	} else {
+		log.Fatalf("error while uploading: %v", string(bodyBytes))
+	}
+
+	return
 }
 
 func main() {
