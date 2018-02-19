@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/mitchellh/go-homedir"
 	"github.com/vharitonsky/iniflags"
 	"io"
 	"io/ioutil"
@@ -167,11 +168,19 @@ func uploadReplay(path string) {
 }
 
 func main() {
-	// inifags.SetConfigFile()
+	defaultConfigFile, err := homedir.Expand("~/.sc2replayuploader.conf")
+	if err != nil {
+		log.Fatalf("error while assembling default configfile: %v", err)
+	}
+	iniflags.SetConfigFile(defaultConfigFile)
 	iniflags.Parse()
 	if hash == "" || rootDir == "" || token == "" {
 		flag.Usage()
 		log.Fatalln("dir, hash and token must be set")
+	}
+	rootDir, err = homedir.Expand(rootDir)
+	if err != nil {
+		log.Fatalf("error while expanding homedir: %v", err)
 	}
 
 	lastReplay := getLastReplay()
