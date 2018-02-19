@@ -37,11 +37,17 @@ func main() {
 		log.Fatalf("error while expanding homedir: %v", err)
 	}
 
-	lastReplay := uploader.GetLastReplay(token)
+	lastReplay, err := uploader.GetLastReplay(token)
+	if err != nil {
+		log.Fatalf("error while getting last replay: %v", err)
+	}
 	files := uploader.GetNewerReplayFiles(rootDir, lastReplay)
 	for _, path := range files {
 		log.Printf("uploading %v", filepath.Base(path))
-		result := uploader.UploadReplay(hash, token, path)
+		result, err := uploader.UploadReplay(hash, token, path)
+		if err != nil {
+			log.Fatalf("error while uploading replay: %v", err)
+		}
 		log.Printf("queued uploaded file with id %v", result.QueueID)
 	}
 }

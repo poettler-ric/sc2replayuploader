@@ -3,9 +3,9 @@ package uploader
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -52,41 +52,46 @@ type UploadResponse struct {
 // GetLastReplay retrieves the last uploaded replay.
 //
 // token is the authorization to use.
-func GetLastReplay(token string) (replay SC2Replay) {
+func GetLastReplay(token string) (replay SC2Replay, err error) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest(http.MethodGet, LastReplayEndpoint, nil)
 	if err != nil {
-		log.Fatalf("error while creating get request (%v): %v",
-			LastReplayEndpoint, err)
+		return replay,
+			fmt.Errorf("error while creating get request (%v): %v",
+				LastReplayEndpoint, err)
 	}
 	req.Header.Set("Authorization", token)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("error while doing the request: %v", err)
+		return replay,
+			fmt.Errorf("error while doing the request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatalf("error while reading body: %v", err)
+			return replay,
+				fmt.Errorf("error while reading body: %v", err)
 		}
 		err = json.Unmarshal(bodyBytes, &replay)
 		if err != nil {
-			log.Fatalf("error while reading json: %v", err)
+			return replay,
+				fmt.Errorf("error while reading json: %v", err)
 		}
 	}
 
 	replay.ReplayTime, err = time.Parse(time.RFC3339,
 		replay.ReplayTimeString)
 	if err != nil {
-		log.Fatalf("error while parsing time (%v): %v",
-			replay.ReplayTimeString, err)
+		return replay,
+			fmt.Errorf("error while parsing time (%v): %v",
+				replay.ReplayTimeString, err)
 	}
 
-	return
+	return replay, nil
 }
 
 // GetNewerReplayFiles searches for all replays newer than the given one.
@@ -113,27 +118,31 @@ func GetNewerReplayFiles(rootFolder string,
 //
 // hash is the user to which to add the replays. token is the auth token to use.
 // path to the file to upload.
-func UploadReplay(hash, token, path string) (result UploadResponse) {
+func UploadReplay(hash, token, path string) (response UploadResponse, err error) {
 	b := &bytes.Buffer{}
 	mp := multipart.NewWriter(b)
 	mp.WriteField("upload_method", UploaderIdentifyer)
 	mp.WriteField("hashkey", hash)
 	replayPart, err := mp.CreateFormFile("replay_file", filepath.Base(path))
 	if err != nil {
-		log.Fatalf("error while creating multipart for file (%v): %v",
-			path,
-			err)
+		return response,
+			fmt.Errorf("error while creating multipart for file (%v): %v",
+				path, err)
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatalf("error while opening file (%v): %v", path, err)
+		return response,
+			fmt.Errorf("error while opening file (%v): %v",
+				path, err)
 	}
 	defer file.Close()
 
 	_, err = io.Copy(replayPart, file)
 	if err != nil {
-		log.Fatalf("error wile copying filecontent (%v): %v", path, err)
+		return response,
+			fmt.Errorf("error wile copying filecontent (%v): %v",
+				path, err)
 	}
 	mp.Close()
 
@@ -141,37 +150,41 @@ func UploadReplay(hash, token, path string) (result UploadResponse) {
 
 	req, err := http.NewRequest(http.MethodPost, ReplayEndpoint, b)
 	if err != nil {
-		log.Fatalf("error while creating get request (%v): %v",
-			ReplayEndpoint, err)
+		return response,
+			fmt.Errorf("error while creating get request (%v): %v",
+				ReplayEndpoint, err)
 	}
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Content-Type", mp.FormDataContentType())
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("error while doing the request: %v", err)
+		return response,
+			fmt.Errorf("error while doing the request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("error while reading body: %v", err)
+		return response, fmt.Errorf("error while reading body: %v", err)
 	}
-	err = json.Unmarshal(bodyBytes, &result)
+	err = json.Unmarshal(bodyBytes, &response)
 	if err != nil {
-		log.Fatalf("error while reading json: %v", err)
+		return response, fmt.Errorf("error while reading json: %v", err)
 	}
-	result.StatusCode = resp.StatusCode
+	response.StatusCode = resp.StatusCode
 
 	if resp.StatusCode == http.StatusOK {
-		result.QueueID, err = strconv.Atoi(result.QueueIDString)
+		response.QueueID, err = strconv.Atoi(response.QueueIDString)
 		if err != nil {
-			log.Fatalf("error while parsing queuid (%v): %v",
-				result.QueueIDString, err)
+			return response,
+				fmt.Errorf("error while parsing queuid (%v): %v",
+					response.QueueIDString, err)
 		}
 	} else {
-		log.Fatalf("error while uploading: %v", string(bodyBytes))
+		return response,
+			fmt.Errorf("error while uploading: %v", string(bodyBytes))
 	}
 
-	return
+	return response, nil
 }
