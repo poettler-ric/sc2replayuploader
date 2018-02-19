@@ -6,6 +6,7 @@ import (
 	"github.com/poettler-ric/sc2replayuploader/uploader"
 	"github.com/vharitonsky/iniflags"
 	"log"
+	"path/filepath"
 )
 
 var (
@@ -39,6 +40,8 @@ func main() {
 	lastReplay := uploader.GetLastReplay(token)
 	files := uploader.GetNewerReplayFiles(rootDir, lastReplay)
 	for _, path := range files {
-		uploader.UploadReplay(hash, token, path)
+		log.Printf("uploading %v", filepath.Base(path))
+		result := uploader.UploadReplay(hash, token, path)
+		log.Printf("queued uploaded file with id %v", result.QueueID)
 	}
 }

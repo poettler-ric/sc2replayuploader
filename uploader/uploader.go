@@ -114,8 +114,6 @@ func GetNewerReplayFiles(rootFolder string,
 // hash is the user to which to add the replays. token is the auth token to use.
 // path to the file to upload.
 func UploadReplay(hash, token, path string) (result UploadResponse) {
-	log.Printf("uploading %v", filepath.Base(path))
-
 	b := &bytes.Buffer{}
 	mp := multipart.NewWriter(b)
 	mp.WriteField("upload_method", UploaderIdentifyer)
@@ -171,7 +169,6 @@ func UploadReplay(hash, token, path string) (result UploadResponse) {
 			log.Fatalf("error while parsing queuid (%v): %v",
 				result.QueueIDString, err)
 		}
-		log.Printf("queued uploaded file with id %v", result.QueueID)
 	} else {
 		log.Fatalf("error while uploading: %v", string(bodyBytes))
 	}
