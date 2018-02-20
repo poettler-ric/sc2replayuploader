@@ -10,15 +10,18 @@ import (
 )
 
 var (
-	token   string
-	rootDir string
-	hash    string
+	token     string
+	rootDir   string
+	hash      string
+	uploadAll bool
 )
 
 func init() {
 	flag.StringVar(&token, "token", "", "authentication token to use")
 	flag.StringVar(&rootDir, "dir", "", "root folder for replays")
 	flag.StringVar(&hash, "hash", "", "hash of the account for the replays")
+	flag.BoolVar(&uploadAll, "all", false,
+		"ulpload all replays (not just the newest)")
 }
 
 func main() {
@@ -37,11 +40,16 @@ func main() {
 		log.Fatalf("error while expanding homedir: %v", err)
 	}
 
-	lastReplay, err := uploader.GetLastReplay(token)
-	if err != nil {
-		log.Fatalf("error while getting last replay: %v", err)
+	var files []string
+	if uploadAll {
+		files = uploader.GetAllReplayFiles(rootDir)
+	} else {
+		lastReplay, err := uploader.GetLastReplay(token)
+		if err != nil {
+			log.Fatalf("error while getting last replay: %v", err)
+		}
+		files = uploader.GetNewerReplayFiles(rootDir, lastReplay)
 	}
-	files := uploader.GetNewerReplayFiles(rootDir, lastReplay)
 	for _, path := range files {
 		log.Printf("uploading %v", filepath.Base(path))
 		result, err := uploader.UploadReplay(hash, token, path)

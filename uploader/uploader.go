@@ -94,6 +94,14 @@ func GetLastReplay(token string) (replay SC2Replay, err error) {
 	return replay, nil
 }
 
+// IsRepalyInfo checks whether a file is a replay based on it's FileInfo
+//
+// info is the FileInfo of the file to check
+func IsRepalyInfo(info os.FileInfo) bool {
+	return info.Mode().IsRegular() &&
+		strings.HasSuffix(info.Name(), ReplaySuffix)
+}
+
 // GetNewerReplayFiles searches for all replays newer than the given one.
 //
 // rootFolder is the folder to search for replays. lastReplay is the last
@@ -104,9 +112,22 @@ func GetNewerReplayFiles(rootFolder string,
 
 	filepath.Walk(rootFolder,
 		func(path string, info os.FileInfo, err error) error {
-			if info.Mode().IsRegular() &&
-				strings.HasSuffix(path, ReplaySuffix) &&
-				info.ModTime().After(maxAge) {
+			if IsRepalyInfo(info) && info.ModTime().After(maxAge) {
+				files = append(files, path)
+			}
+			return nil
+		})
+	return
+}
+
+// GetAllReplayFiles searches a given folder for all replay files
+//
+// rootFolder is the folder to search for replays. lastReplay is the last
+// uploaded replay.
+func GetAllReplayFiles(rootFolder string) (files []string) {
+	filepath.Walk(rootFolder,
+		func(path string, info os.FileInfo, err error) error {
+			if IsRepalyInfo(info) {
 				files = append(files, path)
 			}
 			return nil
