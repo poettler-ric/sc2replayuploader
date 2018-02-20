@@ -49,6 +49,21 @@ type UploadResponse struct {
 	QueueID int
 }
 
+// ReplayFile represents a local replay to upload
+type ReplayFile struct {
+	Path string
+	Info os.FileInfo
+}
+
+// ByDate sorts replay files by date
+type ByDate []*ReplayFile
+
+func (s ByDate) Len() int      { return len(s) }
+func (s ByDate) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s ByDate) Less(i, j int) bool {
+	return s[i].Info.ModTime().Before(s[j].Info.ModTime())
+}
+
 // GetLastReplay retrieves the last uploaded replay.
 //
 // token is the authorization to use.
@@ -107,7 +122,7 @@ func IsRepalyInfo(info os.FileInfo) bool {
 // rootFolder is the folder to search for replays. lastReplay is the last
 // uploaded replay.
 func GetNewerReplayFiles(rootFolder string,
-	lastReplay SC2Replay) (files []string, err error) {
+	lastReplay SC2Replay) (files []*ReplayFile, err error) {
 	maxAge := lastReplay.ReplayTime.Add(-ReplayBufferTime)
 
 	err = filepath.Walk(rootFolder,
@@ -117,7 +132,7 @@ func GetNewerReplayFiles(rootFolder string,
 					path, err)
 			}
 			if IsRepalyInfo(info) && info.ModTime().After(maxAge) {
-				files = append(files, path)
+				files = append(files, &ReplayFile{path, info})
 			}
 			return nil
 		})
@@ -132,7 +147,7 @@ func GetNewerReplayFiles(rootFolder string,
 //
 // rootFolder is the folder to search for replays. lastReplay is the last
 // uploaded replay.
-func GetAllReplayFiles(rootFolder string) (files []string, err error) {
+func GetAllReplayFiles(rootFolder string) (files []*ReplayFile, err error) {
 	err = filepath.Walk(rootFolder,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -140,7 +155,7 @@ func GetAllReplayFiles(rootFolder string) (files []string, err error) {
 					path, err)
 			}
 			if IsRepalyInfo(info) {
-				files = append(files, path)
+				files = append(files, &ReplayFile{path, info})
 			}
 			return nil
 		})

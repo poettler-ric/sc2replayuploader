@@ -7,6 +7,7 @@ import (
 	"github.com/vharitonsky/iniflags"
 	"log"
 	"path/filepath"
+	"sort"
 )
 
 var (
@@ -40,7 +41,7 @@ func main() {
 		log.Fatalf("error while expanding homedir: %v", err)
 	}
 
-	var files []string
+	var files []*uploader.ReplayFile
 	if uploadAll {
 		files, err = uploader.GetAllReplayFiles(rootDir)
 		if err != nil {
@@ -56,9 +57,10 @@ func main() {
 			log.Fatalf("error when getting replay files: %v", err)
 		}
 	}
-	for _, path := range files {
-		log.Printf("uploading %v", filepath.Base(path))
-		result, err := uploader.UploadReplay(hash, token, path)
+	sort.Sort(uploader.ByDate(files))
+	for _, f := range files {
+		log.Printf("uploading %v", filepath.Base(f.Path))
+		result, err := uploader.UploadReplay(hash, token, f.Path)
 		if err != nil {
 			log.Fatalf("error while uploading replay: %v", err)
 		}
