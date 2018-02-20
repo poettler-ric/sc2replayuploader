@@ -107,32 +107,48 @@ func IsRepalyInfo(info os.FileInfo) bool {
 // rootFolder is the folder to search for replays. lastReplay is the last
 // uploaded replay.
 func GetNewerReplayFiles(rootFolder string,
-	lastReplay SC2Replay) (files []string) {
+	lastReplay SC2Replay) (files []string, err error) {
 	maxAge := lastReplay.ReplayTime.Add(-ReplayBufferTime)
 
-	filepath.Walk(rootFolder,
+	err = filepath.Walk(rootFolder,
 		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return fmt.Errorf("incoming error for %v: %v",
+					path, err)
+			}
 			if IsRepalyInfo(info) && info.ModTime().After(maxAge) {
 				files = append(files, path)
 			}
 			return nil
 		})
-	return
+	if err != nil {
+		return nil, fmt.Errorf("error when walking %v: %v",
+			rootFolder, err)
+	}
+	return files, nil
 }
 
 // GetAllReplayFiles searches a given folder for all replay files
 //
 // rootFolder is the folder to search for replays. lastReplay is the last
 // uploaded replay.
-func GetAllReplayFiles(rootFolder string) (files []string) {
-	filepath.Walk(rootFolder,
+func GetAllReplayFiles(rootFolder string) (files []string, err error) {
+	err = filepath.Walk(rootFolder,
 		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return fmt.Errorf("incoming error for %v: %v",
+					path, err)
+			}
 			if IsRepalyInfo(info) {
 				files = append(files, path)
 			}
 			return nil
 		})
-	return
+	if err != nil {
+		return nil, fmt.Errorf("error when walking %v: %v",
+			rootFolder, err)
+	}
+	return files, nil
 }
 
 // UploadReplay uploads a replayfile.

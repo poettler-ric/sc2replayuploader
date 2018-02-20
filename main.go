@@ -42,13 +42,19 @@ func main() {
 
 	var files []string
 	if uploadAll {
-		files = uploader.GetAllReplayFiles(rootDir)
+		files, err = uploader.GetAllReplayFiles(rootDir)
+		if err != nil {
+			log.Fatalf("error when getting replay files: %v", err)
+		}
 	} else {
 		lastReplay, err := uploader.GetLastReplay(token)
 		if err != nil {
 			log.Fatalf("error while getting last replay: %v", err)
 		}
-		files = uploader.GetNewerReplayFiles(rootDir, lastReplay)
+		files, err = uploader.GetNewerReplayFiles(rootDir, lastReplay)
+		if err != nil {
+			log.Fatalf("error when getting replay files: %v", err)
+		}
 	}
 	for _, path := range files {
 		log.Printf("uploading %v", filepath.Base(path))
