@@ -112,6 +112,17 @@ func IsRepalyInfo(info os.FileInfo) bool {
 		strings.HasSuffix(info.Name(), ReplaySuffix)
 }
 
+// IsReplayFile checks whether a file is a repaly based on it's fileinfo
+//
+// path to the file to check.
+func IsReplayFile(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, fmt.Errorf("error while stating %v: %v", path, err)
+	}
+	return IsRepalyInfo(info), nil
+}
+
 // GetNewerReplayFiles searches for all replays newer than the given one.
 //
 // rootFolder is the folder to search for replays. lastReplay is the last
