@@ -33,20 +33,15 @@ const (
 
 // SC2Replay replresents a single replay retrieved from sc2replaystats
 type SC2Replay struct {
-	// ReplayTime is the parsed ReplayTimeString
-	ReplayTime time.Time
-	// ReplayTimeString is the time the replay happened as string
+	ReplayTime       time.Time
 	ReplayTimeString string `json:"replay_date"`
 }
 
 // UploadResponse holds information on uploads
 type UploadResponse struct {
-	// StatusCode stores the http status code of the response
-	StatusCode int
-	// QueueIDString is the id of the job handling the upload
+	StatusCode    int
 	QueueIDString string `json:"replay_queue_id"`
-	// QueueID is the id of the job handling the upload parsed to int
-	QueueID int
+	QueueID       int
 }
 
 // ReplayFile represents a local replay to upload
