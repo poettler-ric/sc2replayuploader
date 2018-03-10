@@ -63,7 +63,6 @@ func handleWatch(watcher *fsnotify.Watcher, hash, token string) {
 	for {
 		select {
 		case event := <-watcher.Events:
-			log.Println(event)
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				isReplay, err := uploader.IsReplayFile(event.Name)
 				if err != nil {
