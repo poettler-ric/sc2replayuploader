@@ -60,17 +60,27 @@ func uploadFile(path, hash, token string) {
 }
 
 func handleWatch(watcher *fsnotify.Watcher, hash, token string) {
+	fileByteCount := make(map[string]int64)
 	for {
 		select {
 		case event := <-watcher.Events:
-			if event.Op&fsnotify.Create == fsnotify.Create {
+			if event.Op&fsnotify.Write == fsnotify.Write {
 				isReplay, err := uploader.IsReplayFile(event.Name)
 				if err != nil {
 					log.Fatalf("error while checking for replay(%v): %v",
 						event.Name, err)
 				}
 				if isReplay {
-					uploadFile(event.Name, hash, token)
+					info, err := os.Stat(event.Name)
+					if err != nil {
+						log.Fatalf("error while getting size of file (%v): %v",
+							event.Name, err)
+					}
+					size := info.Size()
+					if fileByteCount[event.Name] != size {
+						fileByteCount[event.Name] = size
+						uploadFile(event.Name, hash, token)
+					}
 				}
 			}
 		case err := <-watcher.Errors:
