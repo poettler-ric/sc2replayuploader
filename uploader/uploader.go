@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -228,6 +229,11 @@ func UploadReplay(hash, token, path string) (response UploadResponse, err error)
 	}
 	err = json.Unmarshal(bodyBytes, &response)
 	if err != nil {
+		const dumpFile = "sc2replayuploader.dump"
+		newErr := ioutil.WriteFile(dumpFile, bodyBytes, 0644)
+		if newErr != nil {
+			log.Println("couldn't write dump file")
+		}
 		return response, fmt.Errorf("error while reading json: %v", err)
 	}
 	response.StatusCode = resp.StatusCode
